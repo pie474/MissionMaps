@@ -1,4 +1,6 @@
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <SFML/Graphics.hpp>
 #include <list>
 #include <cmath>
@@ -155,7 +157,8 @@ bool isObstructed(sf::Vector2f A, sf::Vector2f B)
 
 /**
  * inputs new node into the pathable graph
- * @param point the point to add to the graph
+ * @param point the position to add to the graph
+ * @return pointer to new node
  */
 MapNode* addNode(sf::Vector2f point)
 {
@@ -358,16 +361,63 @@ int main() {
     window.setActive();
     window.setFramerateLimit(30);
 
-    //load map (obstacles first, then nodes)
-    addObstacle(sf::Vector2f(200, 500), sf::Vector2f(600, 500));
-    addObstacle(sf::Vector2f(0, 700), sf::Vector2f(300, 700));
-    addObstacle(sf::Vector2f(500, 700), sf::Vector2f(1000, 700));
+    //load map
+    string line;
+    ifstream map_file("/Users/chinmay/CLionProjects/MissionMaps/map.txt");
+    if (map_file.is_open())
+    {
+        while ( getline (map_file, line) )//for each line in file
+        {
+            cout << line << '\n';
+            if(line.length() <3) continue;
+            char cmd = line[0];
+            line.erase(0, 2);
+
+            istringstream line_stream;
+            line_stream.str(line);
+            float x, y, x2, y2;
+            switch(cmd) {
+                case '#': //comment, so do nothing
+                    break;
+                case 'o': //obstacle
+                    line_stream >> x >> y >> x2 >> y2;
+                    addObstacle(sf::Vector2f(x, y), sf::Vector2f(x2, y2));
+                    break;
+                case 'n': //normal node
+                    line_stream >> x >> y;
+                    addNode(sf::Vector2f(x, y));
+                    break;
+                case 's': //start node
+                    line_stream >> x >> y;
+                    start_node = addNode(sf::Vector2f(x, y));
+                    break;
+                case 'e': //end node
+                    line_stream >> x >> y;
+                    end_node = addNode(sf::Vector2f(x, y));
+                    break;
+                default:
+                    cout << "UNKNOWN CMD: " << cmd << " (" << line << ")\n";
+            }
+        }
+        map_file.close();
+    }
+    else
+    {
+        cout << "Unable to open map file";
+        return 1;
+    }
+
+
+//    addObstacle(sf::Vector2f(200, 500), sf::Vector2f(600, 500));
+//    addObstacle(sf::Vector2f(0, 700), sf::Vector2f(300, 700));
+//    addObstacle(sf::Vector2f(500, 700), sf::Vector2f(1000, 700));
 
 //    addNode(sf::Vector2f(50, 50));
 //    addNode(sf::Vector2f(850, 850));
 //    addNode(sf::Vector2f(850, 450));
 //    addNode(sf::Vector2f(450, 400));
 
+    sf::Clock clock;
 
     while(window.isOpen())
     {
@@ -380,15 +430,17 @@ int main() {
             else if(event.type == sf::Event::MouseButtonPressed)
             {
                 addNode(sf::Vector2f(sf::Mouse::getPosition(window)));
-                if(school_graph.size() == 1)
-                    start_node = &school_graph.back();
-                else if(school_graph.size() == 2)
-                    end_node = &school_graph.back();
             }
             else if(event.type == sf::Event::KeyPressed)
             {
+                if(event.key.code == sf::Keyboard::Escape)
+                {
+                    window.close();
+                    return 0;
+                }
+                clock.restart();
                 find_path();
-                cout << "path found\n";
+                cout << "path found in " << clock.getElapsedTime().asSeconds() << " seconds\n";
             }
         }
 

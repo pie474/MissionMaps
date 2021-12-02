@@ -363,7 +363,7 @@ int main() {
 
     //load map
     string line;
-    ifstream map_file("/Users/chinmay/CLionProjects/MissionMaps/map.txt");
+    ifstream map_file("../map.txt");
     if (map_file.is_open())
     {
         while ( getline (map_file, line) )//for each line in file

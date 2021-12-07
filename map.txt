@@ -10,6 +10,7 @@ s 400 300
 #normal nodes
 n 100 500
 n 900 500
+N 324 23423 one_token_name
 n 400 600
 
 #end node

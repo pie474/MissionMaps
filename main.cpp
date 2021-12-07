@@ -14,21 +14,22 @@ using namespace std;
  * stores a wall that spans between 2 points
  */
 struct Wall
-{
+        {
     sf::Vector2f a, b;
-};
+        };
 
 /**
  * an individual node on the graph - stores a position, as well as various metrics used in A*
  */
 struct MapNode
-{
+        {
     sf::Vector2f pos;
     list<MapNode*> neighbors;
     double cost = -1, heuristic_cost = -1;
     bool visited = false;
     MapNode* previous = nullptr;
-};
+    string name = "";
+        };
 
 MapNode *start_node = nullptr, *end_node = nullptr;
 
@@ -160,10 +161,11 @@ bool isObstructed(sf::Vector2f A, sf::Vector2f B)
  * @param point the position to add to the graph
  * @return pointer to new node
  */
-MapNode* addNode(sf::Vector2f point)
+MapNode* addNode(sf::Vector2f point, string name)
 {
     MapNode new_node = MapNode();
     new_node.pos = point;
+    new_node.name = name;
 
     school_graph.push_back(new_node);
 
@@ -173,12 +175,17 @@ MapNode* addNode(sf::Vector2f point)
     for(iterator = school_graph.begin(); iterator != school_graph.end(); ++iterator)
     {
         if(&*iterator != new_node_pointer && !isObstructed(point, iterator->pos))//if it's possible to physically go between 2 nodes, create link between them
-        {
+            {
             new_node_pointer->neighbors.push_back(&(*iterator));
             iterator->neighbors.push_back(new_node_pointer);
-        }
+            }
     }
     return new_node_pointer;
+}
+
+MapNode* addNode(sf::Vector2f point)
+{
+    return addNode(point, "");
 }
 
 
@@ -240,10 +247,10 @@ double heuristic_cost(const MapNode* node)
 }
 
 struct compare_cost
-{
+        {
     bool operator() ( const MapNode* a, const  MapNode* b) const
-        { return a->heuristic_cost > b->heuristic_cost ; }
-};
+    { return a->heuristic_cost > b->heuristic_cost ; }
+        };
 
 priority_queue<MapNode*, vector<MapNode*>, compare_cost> frontier_queue;
 unordered_set<MapNode*> frontier_set = unordered_set<MapNode*>();
@@ -367,7 +374,7 @@ int main() {
     if (map_file.is_open())
     {
         while ( getline (map_file, line) )//for each line in file
-        {
+            {
             cout << line << '\n';
             if(line.length() <3) continue;
             char cmd = line[0];
@@ -376,29 +383,35 @@ int main() {
             istringstream line_stream;
             line_stream.str(line);
             float x, y, x2, y2;
+            string name;
+
             switch(cmd) {
                 case '#': //comment, so do nothing
-                    break;
+                break;
                 case 'o': //obstacle
-                    line_stream >> x >> y >> x2 >> y2;
-                    addObstacle(sf::Vector2f(x, y), sf::Vector2f(x2, y2));
-                    break;
+                line_stream >> x >> y >> x2 >> y2;
+                addObstacle(sf::Vector2f(x, y), sf::Vector2f(x2, y2));
+                break;
                 case 'n': //normal node
-                    line_stream >> x >> y;
-                    addNode(sf::Vector2f(x, y));
-                    break;
+                line_stream >> x >> y;
+                addNode(sf::Vector2f(x, y));
+                break;
+                case 'N': //normal named node
+                line_stream >> x >> y >> name;
+                addNode(sf::Vector2f(x, y), name);
+                break;
                 case 's': //start node
-                    line_stream >> x >> y;
-                    start_node = addNode(sf::Vector2f(x, y));
-                    break;
+                line_stream >> x >> y;
+                start_node = addNode(sf::Vector2f(x, y));
+                break;
                 case 'e': //end node
-                    line_stream >> x >> y;
-                    end_node = addNode(sf::Vector2f(x, y));
-                    break;
+                line_stream >> x >> y;
+                end_node = addNode(sf::Vector2f(x, y));
+                break;
                 default:
                     cout << "UNKNOWN CMD: " << cmd << " (" << line << ")\n";
             }
-        }
+            }
         map_file.close();
     }
     else
@@ -406,16 +419,6 @@ int main() {
         cout << "Unable to open map file";
         return 1;
     }
-
-
-//    addObstacle(sf::Vector2f(200, 500), sf::Vector2f(600, 500));
-//    addObstacle(sf::Vector2f(0, 700), sf::Vector2f(300, 700));
-//    addObstacle(sf::Vector2f(500, 700), sf::Vector2f(1000, 700));
-
-//    addNode(sf::Vector2f(50, 50));
-//    addNode(sf::Vector2f(850, 850));
-//    addNode(sf::Vector2f(850, 450));
-//    addNode(sf::Vector2f(450, 400));
 
     sf::Clock clock;
 

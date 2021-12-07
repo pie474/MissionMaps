@@ -1,17 +1,17 @@
-#test file
+# test file
 
 o 200 500 600 500
 o 0 700 300 700
 o 500 700 1000 700
 
-#start node
+# start node
 s 400 300
 
-#normal nodes
+# normal nodes
 n 100 500
 n 900 500
 N 324 23423 one_token_name
 n 400 600
 
-#end node
+# end node
 e 400 900

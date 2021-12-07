@@ -4,7 +4,6 @@
 #include <SFML/Graphics.hpp>
 #include <list>
 #include <cmath>
-#include <functional>
 #include <queue>
 #include <unordered_set>
 #include <stack>
@@ -14,22 +13,22 @@ using namespace std;
  * stores a wall that spans between 2 points
  */
 struct Wall
-        {
+{
     sf::Vector2f a, b;
-        };
+};
 
 /**
  * an individual node on the graph - stores a position, as well as various metrics used in A*
  */
 struct MapNode
-        {
+{
     sf::Vector2f pos;
     list<MapNode*> neighbors;
     double cost = -1, heuristic_cost = -1;
     bool visited = false;
     MapNode* previous = nullptr;
     string name = "";
-        };
+};
 
 MapNode *start_node = nullptr, *end_node = nullptr;
 
@@ -42,55 +41,48 @@ MapNode *start_node = nullptr, *end_node = nullptr;
 double distance(const MapNode& A, const MapNode& B)
 {
     sf::Vector2f diff = B.pos - A.pos;
-    return sqrt(diff.x*diff.x + diff.y*diff.y);
+    return hypot(diff.x, diff.y);
 }
 
+list<Wall> walls; // stores individual walls, whether part of a building or not
+list<MapNode> school_graph; // stores all pathable nodes
 
-list<Wall> obstacles; //stores individual walls, whether part of a building or not
-list<MapNode> school_graph; //stores all pathable nodes
-
-
-//NOTE: make sure to add all obstacles BEFORE creating graph; this does NOT disrupt existing node links
+// NOTE: make sure to add all walls BEFORE creating graph; this does NOT disrupt existing node links
 /**
  * adds a wall between two points to the map
  * @param A
  * @param B
  */
-void addObstacle(sf::Vector2f A, sf::Vector2f B)
+void addWall(sf::Vector2f A, sf::Vector2f B)
 {
     Wall wall;
     wall.a = A;
     wall.b = B;
-    obstacles.push_back(wall);
+    walls.push_back(wall);
 }
 
-
-//FROM https://www.geeksforgeeks.org/check-if-two-given-line-segments-intersect/
-//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+// From https://www.geeksforgeeks.org/check-if-two-given-line-segments-intersect/
 bool onSegment(sf::Vector2f p, sf::Vector2f q, sf::Vector2f r)
 {
-    if (q.x <= max(p.x, r.x) && q.x >= min(p.x, r.x) &&
-    q.y <= max(p.y, r.y) && q.y >= min(p.y, r.y))
-        return true;
-
-    return false;
+    return q.x <= max(p.x, r.x) && q.x >= min(p.x, r.x) &&
+    q.y <= max(p.y, r.y) && q.y >= min(p.y, r.y);
 }
 
-// To find orientation of ordered triplet (p, q, r).
-// The function returns following values
-// 0 --> p, q and r are collinear
-// 1 --> Clockwise
-// 2 --> Counterclockwise
+/**
+ * finds orientation of ordered triplet (p, q, r)
+ * @param p
+ * @param q
+ * @param r
+ * @return orientation: 0 -> collinear, 1 -> CW, 2 -> CCW
+ */
 int orientation(sf::Vector2f p, sf::Vector2f q, sf::Vector2f r)
 {
-    // See https://www.geeksforgeeks.org/orientation-3-ordered-points/
-    // for details of below formula.
-    float val = (q.y - p.y) * (r.x - q.x) -
-            (q.x - p.x) * (r.y - q.y);
+    // From https://www.geeksforgeeks.org/orientation-3-ordered-points/
+    float val = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
 
-    if (val == 0) return 0;  // collinear TODO: use threshold instead of exact check? may not be necessary
+    if (val == 0) return 0; // collinear TODO: use threshold instead of exact check? may not be necessary
 
-    return (val > 0)? 1: 2; // clock or counterclock wise
+    return (val > 0) ? 1 : 2; // CW or CCW
 }
 
 // The main function that returns true if line segment 'p1q1'
@@ -105,8 +97,7 @@ bool doIntersect(sf::Vector2f p1, sf::Vector2f q1, sf::Vector2f p2, sf::Vector2f
     int o4 = orientation(p2, q2, q1);
 
     // General case
-    if (o1 != o2 && o3 != o4)
-        return true;
+    if (o1 != o2 && o3 != o4) return true;
 
     // Special Cases
     // p1, q1 and p2 are collinear and p2 lies on segment p1q1
@@ -123,7 +114,6 @@ bool doIntersect(sf::Vector2f p1, sf::Vector2f q1, sf::Vector2f p2, sf::Vector2f
 
     return false; // Doesn't fall in any of the above cases
 }
-//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 /**
  * checks whether a particular wall is in between two points
@@ -145,10 +135,10 @@ bool isObstructed(sf::Vector2f A, sf::Vector2f B, Wall wall)
  */
 bool isObstructed(sf::Vector2f A, sf::Vector2f B)
 {
-    list<Wall>::iterator it;
-    for(it = obstacles.begin(); it != obstacles.end(); ++it)
+    list<Wall>::iterator iterator;
+    for (iterator = walls.begin(); iterator != walls.end(); ++iterator)
     {
-        if(isObstructed(A, B, *it))
+        if (isObstructed(A, B, *iterator))
         {
             return true;
         }
@@ -172,14 +162,16 @@ MapNode* addNode(sf::Vector2f point, string name)
     MapNode* new_node_pointer = &school_graph.back();
 
     list<MapNode>::iterator iterator;
-    for(iterator = school_graph.begin(); iterator != school_graph.end(); ++iterator)
+    for (iterator = school_graph.begin(); iterator != school_graph.end(); ++iterator)
     {
-        if(&*iterator != new_node_pointer && !isObstructed(point, iterator->pos))//if it's possible to physically go between 2 nodes, create link between them
-            {
+        // if it's possible to physically go between 2 nodes, create link between them
+        if (&*iterator != new_node_pointer && !isObstructed(point, iterator->pos))
+        {
             new_node_pointer->neighbors.push_back(&(*iterator));
             iterator->neighbors.push_back(new_node_pointer);
-            }
+        }
     }
+
     return new_node_pointer;
 }
 
@@ -188,17 +180,16 @@ MapNode* addNode(sf::Vector2f point)
     return addNode(point, "");
 }
 
-
 /**
- * draws out the map graph and obstacles to the screen
+ * draws out the map graph and walls to the screen
  * @param win the window to draw it to
  */
 void display_map(sf::RenderWindow& win)
 {
     list<Wall>::iterator obstacle_iterator;
-    for(obstacle_iterator = obstacles.begin(); obstacle_iterator != obstacles.end(); ++obstacle_iterator)
+    for (obstacle_iterator = walls.begin(); obstacle_iterator != walls.end(); ++obstacle_iterator)
     {
-        //draw line to neighbor
+        // draw line to neighbor
         sf::Vertex line[2];
         line[0] = sf::Vertex(obstacle_iterator->a, sf::Color::Red);
         line[1] = sf::Vertex(obstacle_iterator->b, sf::Color::Red);
@@ -206,20 +197,20 @@ void display_map(sf::RenderWindow& win)
     }
 
     list<MapNode>::iterator map_iterator;
-    for(map_iterator = school_graph.begin(); map_iterator != school_graph.end(); ++map_iterator)
+    for (map_iterator = school_graph.begin(); map_iterator != school_graph.end(); ++map_iterator)
     {
         sf::Vertex node_vertex = sf::Vertex(map_iterator->pos, sf::Color::Yellow);
         list<MapNode*>::iterator neighbor_iterator;
-        for(neighbor_iterator = map_iterator->neighbors.begin(); neighbor_iterator != map_iterator->neighbors.end(); ++neighbor_iterator)
+        for (neighbor_iterator = map_iterator->neighbors.begin(); neighbor_iterator != map_iterator->neighbors.end(); ++neighbor_iterator)
         {
-            //line to neighbor
+            // line to neighbor
             sf::Vertex line[2];
             line[0] = sf::Vertex((*neighbor_iterator)->pos, sf::Color::Yellow);
             line[1] = node_vertex;
             win.draw(line, 2, sf::Lines);
         }
 
-        //draw node
+        // draw node
         sf::CircleShape node_circle = sf::CircleShape();
         node_circle.setRadius(5);
         node_circle.setPosition(map_iterator->pos);
@@ -228,13 +219,10 @@ void display_map(sf::RenderWindow& win)
     }
 }
 
-
-
 //  A* stuff
 //     |
 //     |
 //     V
-
 
 /**
  * the heuristic cost function for A*
@@ -247,10 +235,10 @@ double heuristic_cost(const MapNode* node)
 }
 
 struct compare_cost
-        {
-    bool operator() ( const MapNode* a, const  MapNode* b) const
-    { return a->heuristic_cost > b->heuristic_cost ; }
-        };
+{
+    bool operator() (const MapNode* a, const  MapNode* b) const
+        { return a->heuristic_cost > b->heuristic_cost; }
+};
 
 priority_queue<MapNode*, vector<MapNode*>, compare_cost> frontier_queue;
 unordered_set<MapNode*> frontier_set = unordered_set<MapNode*>();
@@ -261,22 +249,21 @@ unordered_set<MapNode*> frontier_set = unordered_set<MapNode*>();
 void reset()
 {
     list<MapNode>::iterator map_iterator;
-    for(map_iterator = school_graph.begin(); map_iterator != school_graph.end(); ++map_iterator)
+    for (map_iterator = school_graph.begin(); map_iterator != school_graph.end(); ++map_iterator)
     {
         map_iterator->visited = false;
         map_iterator->cost = -1;
-        map_iterator->heuristic_cost = 0;
+        map_iterator->heuristic_cost = -1;
         map_iterator->previous = nullptr;
     }
 
-    //empty frontier
-    while(!frontier_queue.empty())
+    // empty frontier
+    while (!frontier_queue.empty())
     {
         frontier_queue.pop();
     }
     frontier_set.clear();
 }
-
 
 /**
  * checks whether the frontier contains a node
@@ -304,14 +291,14 @@ void add_to_frontier(MapNode* node)
 void print_frontier()
 {
     stack<MapNode*> temp_storage = stack<MapNode*>();
-    while(!frontier_queue.empty())
+    while (!frontier_queue.empty())
     {
         cout << heuristic_cost(frontier_queue.top()) << " ";
         temp_storage.push(frontier_queue.top());
         frontier_queue.pop();
     }
     cout << endl;
-    while(!temp_storage.empty())
+    while (!temp_storage.empty())
     {
         frontier_queue.push(temp_storage.top());
         temp_storage.pop();
@@ -326,11 +313,11 @@ void find_path()
 {
     reset();
     add_to_frontier(start_node);
-    //start_node->cost = 0;
+    // start_node->cost = 0;
 
-    while(!frontier_contains(end_node))
+    while (!frontier_contains(end_node))
     {
-        //print_frontier();
+        // print_frontier();
 
         MapNode* current_node = frontier_queue.top();
         frontier_set.erase(current_node);
@@ -339,21 +326,21 @@ void find_path()
         current_node->visited = true;
 
         list<MapNode*>::iterator neighbor_iterator;
-        for(neighbor_iterator = current_node->neighbors.begin(); neighbor_iterator != current_node->neighbors.end(); ++neighbor_iterator)
+        for (neighbor_iterator = current_node->neighbors.begin(); neighbor_iterator != current_node->neighbors.end(); ++neighbor_iterator)
         {
             MapNode* neighbor = *neighbor_iterator;
 
-            if(neighbor->visited)
+            if (neighbor->visited)
                 continue;
 
-            if(!frontier_contains(neighbor))
+            if (!frontier_contains(neighbor))
             {
                 neighbor->previous = current_node;
                 neighbor->heuristic_cost = heuristic_cost(neighbor);
                 neighbor->cost = current_node->cost + distance(current_node, neighbor);
                 add_to_frontier(neighbor);
             }
-            else if(current_node->cost + distance(current_node, neighbor) < neighbor->cost)
+            else if (current_node->cost + distance(current_node, neighbor) < neighbor->cost)
             {
                 neighbor->previous = current_node;
                 neighbor->heuristic_cost = heuristic_cost(neighbor);
@@ -368,15 +355,15 @@ int main() {
     window.setActive();
     window.setFramerateLimit(30);
 
-    //load map
+    // load map
     string line;
     ifstream map_file("../map.txt");
     if (map_file.is_open())
     {
-        while ( getline (map_file, line) )//for each line in file
-            {
-            cout << line << '\n';
-            if(line.length() <3) continue;
+        while (getline(map_file, line)) // for each line in file
+        {
+            cout << line << endl;
+            if (line.length() < 3) continue;
             char cmd = line[0];
             line.erase(0, 2);
 
@@ -386,32 +373,32 @@ int main() {
             string name;
 
             switch(cmd) {
-                case '#': //comment, so do nothing
-                break;
-                case 'o': //obstacle
-                line_stream >> x >> y >> x2 >> y2;
-                addObstacle(sf::Vector2f(x, y), sf::Vector2f(x2, y2));
-                break;
-                case 'n': //normal node
-                line_stream >> x >> y;
-                addNode(sf::Vector2f(x, y));
-                break;
-                case 'N': //normal named node
-                line_stream >> x >> y >> name;
-                addNode(sf::Vector2f(x, y), name);
-                break;
-                case 's': //start node
-                line_stream >> x >> y;
-                start_node = addNode(sf::Vector2f(x, y));
-                break;
-                case 'e': //end node
-                line_stream >> x >> y;
-                end_node = addNode(sf::Vector2f(x, y));
-                break;
+                case '#': // comment, so do nothing
+                    break;
+                case 'o': // obstacle
+                    line_stream >> x >> y >> x2 >> y2;
+                    addWall(sf::Vector2f(x, y), sf::Vector2f(x2, y2));
+                    break;
+                case 'n': // normal node
+                    line_stream >> x >> y;
+                    addNode(sf::Vector2f(x, y));
+                    break;
+                case 'N': // normal named node
+                    line_stream >> x >> y >> name;
+                    addNode(sf::Vector2f(x, y), name);
+                    break;
+                case 's': // start node
+                    line_stream >> x >> y;
+                    start_node = addNode(sf::Vector2f(x, y));
+                    break;
+                case 'e': // end node
+                    line_stream >> x >> y;
+                    end_node = addNode(sf::Vector2f(x, y));
+                    break;
                 default:
-                    cout << "UNKNOWN CMD: " << cmd << " (" << line << ")\n";
+                    cout << "UNKNOWN CMD: " << cmd << " (" << line << ")" << endl;
             }
-            }
+        }
         map_file.close();
     }
     else
@@ -422,41 +409,42 @@ int main() {
 
     sf::Clock clock;
 
-    while(window.isOpen())
+    while (window.isOpen())
     {
         sf::Event event{};
 
-        while(window.pollEvent(event))
+        while (window.pollEvent(event))
         {
-            if(event.type == sf::Event::Closed)
+            if (event.type == sf::Event::Closed)
+            {
                 window.close();
-            else if(event.type == sf::Event::MouseButtonPressed)
+            }
+            else if (event.type == sf::Event::MouseButtonPressed)
             {
                 addNode(sf::Vector2f(sf::Mouse::getPosition(window)));
             }
-            else if(event.type == sf::Event::KeyPressed)
+            else if (event.type == sf::Event::KeyPressed)
             {
-                if(event.key.code == sf::Keyboard::Escape)
+                if (event.key.code == sf::Keyboard::Escape)
                 {
                     window.close();
                     return 0;
                 }
                 clock.restart();
                 find_path();
-                cout << "path found in " << clock.getElapsedTime().asSeconds() << " seconds\n";
+                cout << "path found in " << clock.getElapsedTime().asMilliseconds() << " ms" << endl;
             }
         }
-
 
         window.clear(sf::Color::Black);
 
         display_map(window);
 
-        //display path if path exists
-        if(end_node != nullptr && end_node->previous != nullptr)
+        // display path if path exists
+        if (end_node != nullptr && end_node->previous != nullptr)
         {
             MapNode* curr = end_node;
-            while(curr != start_node)
+            while (curr != start_node)
             {
                 sf::Vertex line[2];
                 line[0] = sf::Vertex(curr->pos, sf::Color::Blue);
@@ -466,10 +454,8 @@ int main() {
             }
         }
 
-
         window.display();
-
-
     }
+
     return 0;
 }

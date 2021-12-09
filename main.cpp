@@ -379,6 +379,13 @@ int main() {
                     line_stream >> x >> y >> x2 >> y2;
                     addWall(sf::Vector2f(x, y), sf::Vector2f(x2, y2));
                     break;
+                case 'b': // box obstacle
+                    line_stream >> x >> y >> x2 >> y2;
+                    addWall(sf::Vector2f(x, y), sf::Vector2f(x2, y));
+                    addWall(sf::Vector2f(x2, y), sf::Vector2f(x2, y2));
+                    addWall(sf::Vector2f(x, y), sf::Vector2f(x, y2));
+                    addWall(sf::Vector2f(x, y2), sf::Vector2f(x2, y2));
+                    break;
                 case 'n': // normal node
                     line_stream >> x >> y;
                     addNode(sf::Vector2f(x, y));

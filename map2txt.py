@@ -15,8 +15,10 @@ img = cv2.imread('map5.png')
 # color_lst.remove((255, 0, 0))
 # print('imposter colors: ', color_lst)
 
-for i in range(len(img)):
-    for j in range(len(img[0])):
-        pixel = img[i][j]
-        if (pixel[0] == pixel[1] == 0 and pixel[2] == 255) or (pixel[0] == 255 and pixel[1] == pixel[2] == 0):
+for i in range(len(img[0])):
+    for j in range(len(img)):
+        pixel = img[j][i]
+        if pixel[0] == pixel[1] == 0 and pixel[2] == 255:
+            print(f'N {i} {j} NA')
+        if pixel[0] == 255 and pixel[1] == pixel[2] == 0:
             print(f'n {i} {j}')

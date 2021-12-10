@@ -9,7 +9,7 @@
 #include <stack>
 using namespace std;
 
-const bool DEBUG_UI = false;
+bool DEBUG_UI = false;
 
 /**
  * stores a wall that spans between 2 points
@@ -369,6 +369,11 @@ void find_path()
     {
         // print_frontier();
 
+        if(frontier_queue.empty())
+        {
+            reset();
+            break;
+        }
         MapNode* current_node = frontier_queue.top();
         frontier_set.erase(current_node);
         frontier_queue.pop();
@@ -469,9 +474,34 @@ int main() {
     }
     else
     {
-        cout << "Unable to open map file" << endl;
+        cout << "Unable to open map file\n";
         return 1;
     }
+
+    sf::Texture background_image = sf::Texture();
+    if (!background_image.loadFromFile("../blank_map.png"))
+    {
+        cout << "Unable to open background image" << endl;
+        return 1;
+    }
+    sf::Sprite background = sf::Sprite(background_image);
+
+    //load text font
+    sf::Font ARIAL;
+    if (!ARIAL.loadFromFile("../arial.ttf"))
+    {
+        cout << "Unable to load font\n";
+        return 1;
+    }
+
+    sf::Text debug_indicator;
+    debug_indicator.setFont(ARIAL);
+    debug_indicator.setString("DEBUG UI");
+    debug_indicator.setCharacterSize(24);
+    debug_indicator.setFillColor(sf::Color::Yellow);
+    debug_indicator.setPosition(window.getSize().x - 140, 10);
+    debug_indicator.setStyle(0 | sf::Text::Bold);
+
 
     sf::Clock clock;
 
@@ -481,17 +511,15 @@ int main() {
     while (window.isOpen())
     {
         window.clear(sf::Color::Black);
-        if (!DEBUG_UI)
+        if (DEBUG_UI)
         {
-            sf::Texture texture = sf::Texture();
-            if (!texture.loadFromFile("../blank_map.png"))
-            {
-                cout << "Unable to open background image" << endl;
-                return 1;
-            }
-            sf::Sprite background = sf::Sprite(texture);
+            window.draw(debug_indicator);
+        }
+        else
+        {
             window.draw(background);
         }
+
         display_map(window);
 
         if (start_node != nullptr)
@@ -525,8 +553,7 @@ int main() {
                 case sf::Event::KeyPressed:
                     if (event.key.code == sf::Keyboard::Escape)
                     {
-                        window.close();
-                        return 0;
+                        reset()
                     }
                     else if (event.key.code == sf::Keyboard::Space)
                     {
@@ -534,19 +561,23 @@ int main() {
                         find_path();
                         cout << "path found in " << clock.getElapsedTime().asMicroseconds() / 1000.0 << " ms" << endl;
                     }
-                    else if (event.key.code == sf::Keyboard::R)
-                    {
-                        reset();
-                    }
-                    else if (event.key.code == sf::Keyboard::LShift || event.key.code == sf::Keyboard::RShift)
+                    else if (event.key.code == sf::Keyboard::LShift)
                     {
                         shift_down = true;
                     }
+                    else if (event.key.code == sf::Keyboard::RShift)
+                    {
+                        DEBUG_UI = true;
+                    }
                     break;
                 case sf::Event::KeyReleased:
-                    if (event.key.code == sf::Keyboard::LShift || event.key.code == sf::Keyboard::RShift)
+                    if (event.key.code == sf::Keyboard::LShift)
                     {
                         shift_down = false;
+                    }
+                    else if (event.key.code == sf::Keyboard::RShift)
+                    {
+                        DEBUG_UI = false;
                     }
                     break;
                 case sf::Event::MouseButtonPressed:
@@ -587,12 +618,27 @@ int main() {
         // display path if path exists
         if (end_node != nullptr && end_node->previous != nullptr)
         {
+            double path_length = 0;
             MapNode* curr = end_node;
             while (curr != start_node)
             {
                 draw_line(window, curr->pos, curr->previous->pos, 7);
+                path_length += distance(*curr, *(curr->previous));
                 curr = curr->previous;
             }
+
+            //sf::String text("Hello", ARIAL, 50);
+
+            // Or, if you want to do it after the construction :
+            ostringstream length_text;
+            length_text << "path length: " << path_length;
+
+            sf::Text text;
+            text.setFont(ARIAL);
+            text.setString(length_text.str());
+            text.setCharacterSize(24);
+            text.setFillColor(sf::Color::White);
+            window.draw(text);
         }
         else if (DEBUG_UI)
         {

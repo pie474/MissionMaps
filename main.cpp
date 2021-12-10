@@ -9,6 +9,8 @@
 #include <stack>
 using namespace std;
 
+const bool DEBUG_UI = false;
+
 /**
  * stores a wall that spans between 2 points
  */
@@ -177,7 +179,38 @@ MapNode* addNode(sf::Vector2f point, string name)
 
 MapNode* addNode(sf::Vector2f point)
 {
-    return addNode(point, "");
+    return addNode(point, " ");
+}
+
+/**
+ * draws a line with specified endpoints and thickness
+ * @param win the window to draw it to
+ * @param pt1 first endpoint
+ * @param pt2 second endpoint
+ * @param thickness line thickness
+ */
+void draw_line(sf::RenderWindow& win, sf::Vector2f pt1, sf::Vector2f pt2, double thickness)
+{
+    sf::ConvexShape line = sf::ConvexShape();
+    line.setPointCount(4);
+
+    double x1 = pt1.x;
+    double y1 = pt1.y;
+    double x2 = pt2.x;
+    double y2 = pt2.y;
+
+    double theta = atan2(y2 - y1, x2 - x1);
+    double s = sin(theta);
+    double c = cos(theta);
+    double t = thickness / 2;
+
+    line.setPoint(0, sf::Vector2f(x1 + t*s, y1 - t*c));
+    line.setPoint(1, sf::Vector2f(x2 + t*s, y2 - t*c));
+    line.setPoint(2, sf::Vector2f(x2 - t*s, y2 + t*c));
+    line.setPoint(3, sf::Vector2f(x1 - t*s, y1 + t*c));
+
+    line.setFillColor(sf::Color::Blue);
+    win.draw(line);
 }
 
 /**
@@ -186,25 +219,31 @@ MapNode* addNode(sf::Vector2f point)
  */
 void display_map(sf::RenderWindow& win)
 {
-    list<Wall>::iterator obstacle_iterator;
-    for (obstacle_iterator = walls.begin(); obstacle_iterator != walls.end(); ++obstacle_iterator)
+    if (DEBUG_UI)
     {
-        // draw line to neighbor
-        sf::Vertex line[2];
-        line[0] = sf::Vertex(obstacle_iterator->a, sf::Color::Red);
-        line[1] = sf::Vertex(obstacle_iterator->b, sf::Color::Red);
-        win.draw(line, 2, sf::Lines);
+        list<Wall>::iterator obstacle_iterator;
+        for (obstacle_iterator = walls.begin(); obstacle_iterator != walls.end(); ++obstacle_iterator)
+        {
+            // draw line to neighbor
+            sf::Vertex line[2];
+            line[0] = sf::Vertex(obstacle_iterator->a, sf::Color::Red);
+            line[1] = sf::Vertex(obstacle_iterator->b, sf::Color::Red);
+            win.draw(line, 2, sf::Lines);
+        }
     }
 
     list<MapNode>::iterator map_iterator;
     for (map_iterator = school_graph.begin(); map_iterator != school_graph.end(); ++map_iterator)
     {
         // draw node
-        sf::CircleShape node_circle = sf::CircleShape();
-        node_circle.setRadius(5);
-        node_circle.setPosition(map_iterator->pos - sf::Vector2f(5, 5));
-        node_circle.setFillColor(sf::Color::White);
-        win.draw(node_circle);
+        if (map_iterator->name != " " || DEBUG_UI)
+        {
+            sf::CircleShape node_circle = sf::CircleShape();
+            node_circle.setRadius(5);
+            node_circle.setPosition(map_iterator->pos - sf::Vector2f(5, 5));
+            node_circle.setFillColor(sf::Color::White);
+            win.draw(node_circle);
+        }
     }
 }
 
@@ -337,12 +376,15 @@ void find_path()
         current_node->visited = true;
 
         list<MapNode*>::iterator neighbor_iterator;
+
         for (neighbor_iterator = current_node->neighbors.begin(); neighbor_iterator != current_node->neighbors.end(); ++neighbor_iterator)
         {
             MapNode* neighbor = *neighbor_iterator;
 
             if (neighbor->visited)
+            {
                 continue;
+            }
 
             if (!frontier_contains(neighbor))
             {
@@ -363,6 +405,13 @@ void find_path()
 
 int main() {
     sf::RenderWindow window(sf::VideoMode(1418, 1221), "Mission Maps");
+    sf::Image icon = sf::Image();
+    if (!icon.loadFromFile("../icon.png"))
+    {
+        cout << "Unable to open icon image" << endl;
+        return 1;
+    }
+    window.setIcon(icon.getSize().x, icon.getSize().y, icon.getPixelsPtr());
     window.setActive();
     window.setFramerateLimit(30);
 
@@ -373,7 +422,6 @@ int main() {
     {
         while (getline(map_file, line)) // for each line in file
         {
-            //cout << line << endl;
             if (line.length() < 3) continue;
             char cmd = line[0];
             line.erase(0, 2);
@@ -421,23 +469,32 @@ int main() {
     }
     else
     {
-        cout << "Unable to open map file";
+        cout << "Unable to open map file" << endl;
         return 1;
     }
 
     sf::Clock clock;
 
-    MapNode* nearest_node;
+    MapNode* nearest_node = nullptr;
     bool shift_down = false;
 
     while (window.isOpen())
     {
-
-
         window.clear(sf::Color::Black);
+        if (!DEBUG_UI)
+        {
+            sf::Texture texture = sf::Texture();
+            if (!texture.loadFromFile("../blank_map.png"))
+            {
+                cout << "Unable to open background image" << endl;
+                return 1;
+            }
+            sf::Sprite background = sf::Sprite(texture);
+            window.draw(background);
+        }
         display_map(window);
 
-        if(start_node != nullptr)
+        if (start_node != nullptr)
         {
             sf::CircleShape start_circle = sf::CircleShape();
             start_circle.setRadius(8);
@@ -445,7 +502,7 @@ int main() {
             start_circle.setFillColor(sf::Color::Red);
             window.draw(start_circle);
         }
-        if(end_node != nullptr)
+        if (end_node != nullptr)
         {
             sf::CircleShape end_circle = sf::CircleShape();
             end_circle.setRadius(8);
@@ -454,15 +511,13 @@ int main() {
             window.draw(end_circle);
         }
 
-
         sf::Event event{};
-
 
         bool set_start = false, set_end = false;
         while (window.pollEvent(event))
         {
-            float min_dist = 100000;//large initialization number
-            switch(event.type)
+            float min_dist = 100000; // large initialization number
+            switch (event.type)
             {
                 case sf::Event::Closed:
                     window.close();
@@ -477,7 +532,7 @@ int main() {
                     {
                         clock.restart();
                         find_path();
-                        cout << "path found in " << clock.getElapsedTime().asMilliseconds() << " ms" << endl;
+                        cout << "path found in " << clock.getElapsedTime().asMicroseconds() / 1000.0 << " ms" << endl;
                     }
                     else if (event.key.code == sf::Keyboard::R)
                     {
@@ -493,10 +548,11 @@ int main() {
                     {
                         shift_down = false;
                     }
+                    break;
                 case sf::Event::MouseButtonPressed:
-                    if(event.mouseButton.button == sf::Mouse::Left)
+                    if (event.mouseButton.button == sf::Mouse::Left)
                     {
-                        if(shift_down)
+                        if (shift_down)
                         {
                             set_start = true;
                         }
@@ -510,14 +566,17 @@ int main() {
                     list<MapNode>::iterator map_iterator;
                     for (map_iterator = school_graph.begin(); map_iterator != school_graph.end(); ++map_iterator)
                     {
-                        float dist = hypot(map_iterator->pos.x - event.mouseMove.x, map_iterator->pos.y - event.mouseMove.y);
-                        if(dist < min_dist)
+                        if (map_iterator->name != " ")
                         {
-                            min_dist = dist;
-                            nearest_node = &*map_iterator;
+                            float dist = hypot(map_iterator->pos.x - event.mouseMove.x, map_iterator->pos.y - event.mouseMove.y);
+                            if (dist < min_dist)
+                            {
+                                min_dist = dist;
+                                nearest_node = &*map_iterator;
+                            }
                         }
                     }
-                    if(min_dist > 20)
+                    if (min_dist > 20)
                     {
                         nearest_node = nullptr;
                     }
@@ -525,41 +584,35 @@ int main() {
             }
         }
 
-
-
         // display path if path exists
         if (end_node != nullptr && end_node->previous != nullptr)
         {
             MapNode* curr = end_node;
             while (curr != start_node)
             {
-                sf::Vertex line[2];
-                line[0] = sf::Vertex(curr->pos, sf::Color::Blue);
-                line[1] = sf::Vertex(curr->previous->pos, sf::Color::Blue);
-                window.draw(line, 2, sf::Lines);
+                draw_line(window, curr->pos, curr->previous->pos, 7);
                 curr = curr->previous;
             }
         }
-        else
+        else if (DEBUG_UI)
         {
             display_graph(window);
         }
 
-        if(nearest_node != nullptr)
+        if (nearest_node != nullptr)
         {
             sf::CircleShape node_circle = sf::CircleShape();
             node_circle.setRadius(10);
             node_circle.setPosition(nearest_node->pos - sf::Vector2f(10, 10));
-            node_circle.setFillColor(sf::Color(128, 128, 128));
+            node_circle.setFillColor(sf::Color(100, 100, 100));
             window.draw(node_circle);
 
-
-            if(set_start)
+            if (set_start)
             {
                 reset();
                 start_node = nearest_node;
             }
-            if(set_end)
+            if (set_end)
             {
                 reset();
                 end_node = nearest_node;

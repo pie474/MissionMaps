@@ -35,3 +35,4 @@ cmake-build-debug
 .idea
 CMakeLists.txt
 cmake_modules
+.DS_Store

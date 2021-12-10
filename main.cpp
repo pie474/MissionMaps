@@ -3,6 +3,7 @@
 #include <sstream>
 #include <SFML/Graphics.hpp>
 #include <list>
+#include <iomanip>
 #include <cmath>
 #include <queue>
 #include <unordered_set>
@@ -481,7 +482,7 @@ int main() {
     sf::Texture background_image = sf::Texture();
     if (!background_image.loadFromFile("../blank_map.png"))
     {
-        cout << "Unable to open background image" << endl;
+        cout << "Unable to open background image\n";
         return 1;
     }
     sf::Sprite background = sf::Sprite(background_image);
@@ -553,7 +554,7 @@ int main() {
                 case sf::Event::KeyPressed:
                     if (event.key.code == sf::Keyboard::Escape)
                     {
-                        reset()
+                        reset();
                     }
                     else if (event.key.code == sf::Keyboard::Space)
                     {
@@ -627,11 +628,8 @@ int main() {
                 curr = curr->previous;
             }
 
-            //sf::String text("Hello", ARIAL, 50);
-
-            // Or, if you want to do it after the construction :
             ostringstream length_text;
-            length_text << "path length: " << path_length;
+            length_text << "Path Length: " << fixed << setprecision(1) << path_length*0.6 << " ft";
 
             sf::Text text;
             text.setFont(ARIAL);

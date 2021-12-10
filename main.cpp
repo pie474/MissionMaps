@@ -538,7 +538,7 @@ int main() {
                     {
                         reset();
                     }
-                    else if (event.key.code == sf::Keyboard::LShift)
+                    else if (event.key.code == sf::Keyboard::LShift || event.key.code == sf::Keyboard::RShift)
                     {
                         shift_down = true;
                     }

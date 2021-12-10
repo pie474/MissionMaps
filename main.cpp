@@ -544,7 +544,7 @@ int main() {
                     }
                     break;
                 case sf::Event::KeyReleased:
-                    if (event.key.code == sf::Keyboard::LShift)
+                    if (event.key.code == sf::Keyboard::LShift || event.key.code == sf::Keyboard::RShift)
                     {
                         shift_down = false;
                     }

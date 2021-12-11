@@ -370,7 +370,7 @@ void find_path()
     {
         // print_frontier();
 
-        if(frontier_queue.empty())
+        if (frontier_queue.empty())
         {
             reset();
             break;
@@ -414,7 +414,7 @@ int main() {
     sf::Image icon = sf::Image();
     if (!icon.loadFromFile("../icon.png"))
     {
-        cout << "Unable to open icon image" << endl;
+        cout << "Unable to open icon image\n";
         return 1;
     }
     window.setIcon(icon.getSize().x, icon.getSize().y, icon.getPixelsPtr());
@@ -502,7 +502,6 @@ int main() {
     debug_indicator.setFillColor(sf::Color::Yellow);
     debug_indicator.setPosition(window.getSize().x - 140, 10);
     debug_indicator.setStyle(0 | sf::Text::Bold);
-
 
     sf::Clock clock;
 

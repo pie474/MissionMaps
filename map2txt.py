@@ -16,4 +16,4 @@ import cv2
 # contours = cv2.findContours(bw, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[0]
 # for contour in contours:
 #     x, y, w, h = cv2.boundingRect(contour)
-#     print(f'b {x} {y} {x + w} {y + h}')
+#     print(f'b {x} {y} {x + w - 1} {y + h - 1}')

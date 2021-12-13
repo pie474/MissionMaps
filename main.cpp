@@ -477,15 +477,20 @@ int main() {
     string line;
     while (getline(map_file, line))
     {
+        // Ignore Short Lines
         if (line.length() < 3) continue;
+
+        // Get Command
         char cmd = line[0];
         line.erase(0, 2);
 
+        // Create String Stream
         istringstream line_stream;
         line_stream.str(line);
         float x, y, x2, y2;
         string name;
 
+        // Do Things Depending on Command
         switch(cmd) {
             case '#': // Comment
                 break;
@@ -522,6 +527,7 @@ int main() {
     }
     map_file.close();
 
+    // Debug Mode Indicator
     sf::Text debug_indicator;
     debug_indicator.setFont(ARIAL);
     debug_indicator.setString("DEBUG UI");
@@ -530,14 +536,16 @@ int main() {
     debug_indicator.setPosition(window.getSize().x - 140, 10);
     debug_indicator.setStyle(0 | sf::Text::Bold);
 
+    // Variables
     sf::Clock clock;
     double path_time = 0;
-
     MapNode* nearest_node = nullptr;
     bool shift_down = false;
 
+    // Loop Until Program Ends
     while (window.isOpen())
     {
+        // Set Background Based on UI Mode
         window.clear(sf::Color::Black);
         if (DEBUG_UI)
         {
@@ -548,8 +556,10 @@ int main() {
             window.draw(background);
         }
 
+        // Display Map
         display_map(window);
 
+        // Draw Start Node
         if (start_node != nullptr)
         {
             sf::CircleShape start_circle = sf::CircleShape();
@@ -558,6 +568,8 @@ int main() {
             start_circle.setFillColor(sf::Color::Red);
             window.draw(start_circle);
         }
+
+        // Draw End Node
         if (end_node != nullptr)
         {
             sf::CircleShape end_circle = sf::CircleShape();
@@ -567,45 +579,55 @@ int main() {
             window.draw(end_circle);
         }
 
+        // Event Listening
         sf::Event event{};
-
         bool set_start = false, set_end = false;
         while (window.pollEvent(event))
         {
-            float min_dist = 100000; // large initialization number
+            // Event Listeners
             switch (event.type)
             {
                 case sf::Event::Closed:
+                    // Close Window
                     window.close();
                     break;
                 case sf::Event::KeyPressed:
+                    // Reset
                     if (event.key.code == sf::Keyboard::Escape)
                     {
                         reset();
                         DEBUG_UI = false;
                     }
+
+                    // Find Path
                     else if (event.key.code == sf::Keyboard::Space)
                     {
                         clock.restart();
                         find_path();
                         path_time = clock.getElapsedTime().asMicroseconds() / 1000.0;
                     }
+
+                    // Update Shift State Variable
                     else if (event.key.code == sf::Keyboard::LShift)
                     {
                         shift_down = true;
                     }
                     break;
                 case sf::Event::KeyReleased:
+                    // Update Shift State Variable
                     if (event.key.code == sf::Keyboard::LShift)
                     {
                         shift_down = false;
                     }
+
+                    // Toggle Debug Mode
                     else if (event.key.code == sf::Keyboard::RShift)
                     {
                         DEBUG_UI = !DEBUG_UI;
                     }
                     break;
                 case sf::Event::MouseButtonPressed:
+                    // Set Start/End Node
                     if (event.mouseButton.button == sf::Mouse::Left)
                     {
                         if (shift_down)
@@ -619,6 +641,8 @@ int main() {
                     }
                     break;
                 case sf::Event::MouseMoved:
+                    // Find Nearest Node to Mouse Cursor
+                    float min_dist = 100000; // Arbitrary Large Number
                     list<MapNode>::iterator map_iterator;
                     for (map_iterator = school_graph.begin(); map_iterator != school_graph.end(); ++map_iterator)
                     {
@@ -633,6 +657,7 @@ int main() {
                         }
                     }
 
+                    // Ignore if Nearest Node is too Far
                     if (min_dist > 20)
                     {
                         nearest_node = nullptr;
@@ -641,9 +666,10 @@ int main() {
             }
         }
 
-        // display path if path exists
+        // Display Path if it Exists
         if (end_node != nullptr && end_node->previous != nullptr)
         {
+            // Draw Path
             double path_length = 0;
             MapNode* curr = end_node;
             while (curr != start_node)
@@ -653,10 +679,12 @@ int main() {
                 curr = curr->previous;
             }
 
+            // Create String Stream for Path Information
             ostringstream path_text;
             path_text << "Path Found In: " << fixed << setprecision(3) << path_time << " ms\n";
             path_text << "Path Length: " << fixed << setprecision(1) << path_length * 0.6 << " ft";
 
+            // Path Information Text
             sf::Text text;
             text.setFont(ARIAL);
             text.setString(path_text.str());
@@ -664,24 +692,31 @@ int main() {
             text.setFillColor(sf::Color::White);
             window.draw(text);
         }
+
+        // Display Node Connections if Debug Mode
         else if (DEBUG_UI)
         {
             display_graph(window);
         }
 
+        // Deal With Mouse Hover Node
         if (nearest_node != nullptr)
         {
+            // Make Node Circle Larger
             sf::CircleShape node_circle = sf::CircleShape();
             node_circle.setRadius(10);
             node_circle.setPosition(nearest_node->pos - sf::Vector2f(10, 10));
             node_circle.setFillColor(sf::Color(100, 100, 100));
             window.draw(node_circle);
 
+            // Set Node to Start Node
             if (set_start)
             {
                 reset();
                 start_node = nearest_node;
             }
+
+            // Set Node to End Node
             if (set_end)
             {
                 reset();
@@ -689,6 +724,7 @@ int main() {
             }
         }
 
+        // Update Window Display
         window.display();
     }
 

@@ -283,10 +283,10 @@ void add_to_frontier(MapNode* node)
 }
 
 /**
- * Uses A* pathfinding algorithm to find the shortest path between start and end node
+ * Uses A* pathfinding algorithm to attempt to find the shortest path between start and end node
  * Updates path pointers on every node in graph
  */
-void find_path()
+void find_path_a_star()
 {
     reset();
     add_to_frontier(start_node);
@@ -338,6 +338,63 @@ void find_path()
     }
 }
 
+
+/**
+ * Uses Dijkstra's algorithm to attempt to find the shortest path between start and end node
+ * Updates path pointers on every node in graph
+ */
+void find_path_dijkstra()
+{
+    reset();
+    add_to_frontier(start_node);
+
+    // Loop Until Path is Completed
+    while (!frontier_queue.empty())
+    {
+        // Visit Node Closest to Endpoint
+        MapNode* current_node = frontier_queue.top();
+        frontier_set.erase(current_node);
+        frontier_queue.pop();
+        current_node->visited = true;
+
+        // Loop for Neighboring Nodes
+        list<MapNode*>::iterator neighbor_iterator;
+        for (neighbor_iterator = current_node->neighbors.begin(); neighbor_iterator != current_node->neighbors.end(); ++neighbor_iterator)
+        {
+            MapNode* neighbor = *neighbor_iterator;
+
+            // Ignore if Neighbor is Visited
+            if (neighbor->visited)
+            {
+                continue;
+            }
+
+            // Add Neighbor to Frontier if Not Already There
+            if (!frontier_contains(neighbor))
+            {
+                neighbor->previous = current_node;
+                neighbor->heuristic_cost = heuristic_cost(neighbor);
+                neighbor->cost = current_node->cost + distance(current_node, neighbor);
+                add_to_frontier(neighbor);
+            }
+
+                // Update Neighbor if in Frontier and has Higher Cost
+            else if (current_node->cost + distance(current_node, neighbor) < neighbor->cost)
+            {
+                neighbor->previous = current_node;
+                neighbor->heuristic_cost = heuristic_cost(neighbor);
+                neighbor->cost = current_node->cost + distance(current_node, neighbor);
+            }
+        }
+    }
+
+    // Reset if Frontier Queue is Empty
+    if (frontier_queue.empty())
+    {
+        reset();
+    }
+}
+
 // SFML Drawing Functions
 
 bool DEBUG_UI = false;
@@ -350,7 +407,7 @@ bool DEBUG_UI = false;
  * @param thickness line thickness
  * @param color line color
  */
-void draw_line(sf::RenderWindow& win, sf::Vector2f pt1, sf::Vector2f pt2, double thickness)
+void draw_line(sf::RenderWindow& win, sf::Vector2f pt1, sf::Vector2f pt2, double thickness, sf::Color color)
 {
     sf::ConvexShape line = sf::ConvexShape();
     line.setPointCount(4);
@@ -373,7 +430,7 @@ void draw_line(sf::RenderWindow& win, sf::Vector2f pt1, sf::Vector2f pt2, double
     line.setPoint(3, sf::Vector2f(x1 - t*s, y1 + t*c));
 
     // Drawing Line
-    line.setFillColor(sf::Color::Blue);
+    line.setFillColor(color);
     win.draw(line);
 
     // Endpoint Circle 1
@@ -618,7 +675,7 @@ int main() {
                     else if (event.key.code == sf::Keyboard::Space)
                     {
                         clock.restart();
-                        find_path();
+                        find_path_a_star();
                         path_time = clock.getElapsedTime().asMicroseconds() / 1000.0;
                     }
 
@@ -689,7 +746,7 @@ int main() {
             MapNode* curr = end_node;
             while (curr != start_node)
             {
-                draw_line(window, curr->pos, curr->previous->pos, 7);
+                draw_line(window, curr->pos, curr->previous->pos, 7, sf::Color(154, 154, 255));
                 path_length += distance(*curr, *(curr->previous));
                 curr = curr->previous;
             }

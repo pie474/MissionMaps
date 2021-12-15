@@ -348,6 +348,7 @@ bool DEBUG_UI = false;
  * @param pt1 first endpoint
  * @param pt2 second endpoint
  * @param thickness line thickness
+ * @param color line color
  */
 void draw_line(sf::RenderWindow& win, sf::Vector2f pt1, sf::Vector2f pt2, double thickness)
 {
@@ -374,6 +375,20 @@ void draw_line(sf::RenderWindow& win, sf::Vector2f pt1, sf::Vector2f pt2, double
     // Drawing Line
     line.setFillColor(sf::Color::Blue);
     win.draw(line);
+
+    // Endpoint Circle 1
+    sf::CircleShape circle1 = sf::CircleShape();
+    circle1.setRadius(t);
+    circle1.setPosition(sf::Vector2f(x1 - t, y1 - t));
+    circle1.setFillColor(color);
+    win.draw(circle1);
+
+    // Endpoint Circle 2
+    sf::CircleShape circle2 = sf::CircleShape();
+    circle2.setRadius(t);
+    circle2.setPosition(sf::Vector2f(x2 - t, y2 - t));
+    circle2.setFillColor(color);
+    win.draw(circle2);
 }
 
 /**

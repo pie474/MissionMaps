@@ -38,6 +38,7 @@ struct MapNode
 MapNode *start_node = nullptr, *end_node = nullptr;
 list<Wall> walls; // stores all walls
 list<MapNode> school_graph; // stores all nodes
+int total_num_nodes = 0;
 
 // Functions for Obstruction Checking
 
@@ -175,6 +176,7 @@ MapNode* addNode(sf::Vector2f point, string name)
         }
     }
 
+    total_num_nodes++;
     return new_node_pointer;
 }
 
@@ -201,22 +203,7 @@ void addWall(sf::Vector2f a, sf::Vector2f b)
     walls.push_back(wall);
 }
 
-// Dijkstra Structs / Variables / Functions
-
-/**
- * Custom comparator for MapNodes
- * Based on heuristic cost for both nodes
- */
-struct compare_cost
-{
-    bool operator() (const MapNode* a, const  MapNode* b) const
-    {
-        return a->heuristic_cost > b->heuristic_cost;
-    }
-};
-
-priority_queue<MapNode*, vector<MapNode*>, compare_cost> frontier_queue;
-unordered_set<MapNode*> frontier_set = unordered_set<MapNode*>();
+// Dijkstra Variables / Functions
 
 /**
  * Calculates distance between two points
@@ -231,16 +218,6 @@ double distance(const MapNode& a, const MapNode& b)
 }
 
 /**
- * Heuristic cost function for Dijkstra
- * @param node the node to calculate the cost for
- * @return cost
- */
-double heuristic_cost(const MapNode* node)
-{
-    return distance(*node, *end_node);
-}
-
-/**
  * Resets all data from previous Dijkstra's runs
  */
 void reset()
@@ -251,39 +228,26 @@ void reset()
     {
         map_iterator->visited = false;
         map_iterator->cost = 1000000;
-        map_iterator->heuristic_cost = -1;
         map_iterator->previous = nullptr;
     }
-
-    // Empty Frontier
-    while (!frontier_queue.empty())
-    {
-        frontier_queue.pop();
-    }
-    frontier_set.clear();
 }
 
 /**
- * Uses Dijkstra's Algorithm to attempt to find the shortest path between start and end node
+ * Uses Dijkstra's Algorithm to find the shortest path between start and end node
  * Updates path pointers on every node in graph
  */
 void find_path_dijkstra()
 {
     reset();
     list<MapNode>::iterator map_iterator;
-    int num_nodes = 0;
-    for (map_iterator = school_graph.begin(); map_iterator != school_graph.end(); ++map_iterator)
-    {
-        map_iterator->cost = 1000000;
-        map_iterator->visited = false;
-        num_nodes++;
-    }
+    int num_nodes = total_num_nodes;
+
     start_node->cost = 0;
 
-    // Loop Until Path is Completed
+    // Loop Until All Nodes are Visited
     while (num_nodes > 0)
     {
-        // Visit Node with Least Cost
+        // Visit Unvisited Node with the Least Cost
         MapNode* current_node = nullptr;
         for (map_iterator = school_graph.begin(); map_iterator != school_graph.end(); ++map_iterator)
         {
@@ -295,7 +259,7 @@ void find_path_dijkstra()
         current_node->visited = true;
         num_nodes--;
 
-        // Loop for Neighboring Nodes
+        // Loop Through Neighboring Nodes
         list<MapNode*>::iterator neighbor_iterator;
         for (neighbor_iterator = current_node->neighbors.begin(); neighbor_iterator != current_node->neighbors.end(); ++neighbor_iterator)
         {
@@ -307,6 +271,8 @@ void find_path_dijkstra()
                 continue;
             }
 
+            // If the previously determined path to this neighbor is longer than going through the current node,
+            //    update the path to the neighbor
             double distance_through = current_node->cost + distance(*current_node, *neighbor);
 
             if (distance_through < neighbor->cost)
@@ -707,12 +673,11 @@ int main() {
             // Set Node to End Node
             if (set_end)
             {
-                reset();
                 end_node = nearest_node;
             }
 
             // Find Path from Start Node to End Node
-            if (set_start || set_end)
+            if (set_start)
             {
                 clock.restart();
                 find_path_dijkstra();

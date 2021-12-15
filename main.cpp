@@ -249,7 +249,7 @@ void reset()
     for (map_iterator = school_graph.begin(); map_iterator != school_graph.end(); ++map_iterator)
     {
         map_iterator->visited = false;
-        map_iterator->cost = -1;
+        map_iterator->cost = 1000000;
         map_iterator->heuristic_cost = -1;
         map_iterator->previous = nullptr;
     }
@@ -317,21 +317,21 @@ void find_path_a_star()
             {
                 neighbor->previous = current_node;
                 neighbor->heuristic_cost = heuristic_cost(neighbor);
-                neighbor->cost = current_node->cost + distance(current_node, neighbor);
+                neighbor->cost = current_node->cost + distance(*current_node, *neighbor);
                 add_to_frontier(neighbor);
             }
 
             // Update Neighbor if in Frontier and has Higher Cost
-            else if (current_node->cost + distance(current_node, neighbor) < neighbor->cost)
+            else if (current_node->cost + distance(*current_node, *neighbor) < neighbor->cost)
             {
                 neighbor->previous = current_node;
                 neighbor->heuristic_cost = heuristic_cost(neighbor);
-                neighbor->cost = current_node->cost + distance(current_node, neighbor);
+                neighbor->cost = current_node->cost + distance(*current_node, *neighbor);
             }
         }
     }
 
-    // Reset if Frontier Queue is Empty
+    // Reset if Frontier Queue is Empty (path wasn't found)
     if (frontier_queue.empty())
     {
         reset();
@@ -340,22 +340,41 @@ void find_path_a_star()
 
 
 /**
- * Uses Dijkstra's algorithm to attempt to find the shortest path between start and end node
+ * Uses Dijkstra's Algorithm to attempt to find the shortest path between start and end node
  * Updates path pointers on every node in graph
  */
 void find_path_dijkstra()
 {
     reset();
-    add_to_frontier(start_node);
+    list<MapNode>::iterator map_iterator;
+    int num_nodes = 0;
+    for (map_iterator = school_graph.begin(); map_iterator != school_graph.end(); ++map_iterator)
+    {
+        map_iterator->cost = 1000000;
+        map_iterator->visited = false;
+        num_nodes++;
+
+    }
+    start_node->cost = 0;
 
     // Loop Until Path is Completed
-    while (!frontier_queue.empty())
+    while (num_nodes > 0)
     {
-        // Visit Node Closest to Endpoint
-        MapNode* current_node = frontier_queue.top();
-        frontier_set.erase(current_node);
-        frontier_queue.pop();
+        // Visit Node with the least cost
+        MapNode* current_node = nullptr;
+        for (map_iterator = school_graph.begin(); map_iterator != school_graph.end(); ++map_iterator)
+        {
+            //cout << map_iterator->cost << endl;
+
+            if(!map_iterator->visited && (current_node == nullptr || (map_iterator->cost < current_node->cost)))
+            {
+                current_node = &*map_iterator;
+            }
+        }
+        //cout << current_node->name << "  " << current_node->cost << endl;
+        cout << endl;
         current_node->visited = true;
+        num_nodes--;
 
         // Loop for Neighboring Nodes
         list<MapNode*>::iterator neighbor_iterator;
@@ -363,35 +382,21 @@ void find_path_dijkstra()
         {
             MapNode* neighbor = *neighbor_iterator;
 
-            // Ignore if Neighbor is Visited
+            // Ignore if Neighbor is already visited
             if (neighbor->visited)
             {
                 continue;
             }
 
-            // Add Neighbor to Frontier if Not Already There
-            if (!frontier_contains(neighbor))
-            {
-                neighbor->previous = current_node;
-                neighbor->heuristic_cost = heuristic_cost(neighbor);
-                neighbor->cost = current_node->cost + distance(current_node, neighbor);
-                add_to_frontier(neighbor);
-            }
+            double distance_through = current_node->cost + distance(*current_node, *neighbor);
 
-                // Update Neighbor if in Frontier and has Higher Cost
-            else if (current_node->cost + distance(current_node, neighbor) < neighbor->cost)
+
+            if (distance_through < neighbor->cost)
             {
+                neighbor->cost = distance_through;
                 neighbor->previous = current_node;
-                neighbor->heuristic_cost = heuristic_cost(neighbor);
-                neighbor->cost = current_node->cost + distance(current_node, neighbor);
             }
         }
-    }
-
-    // Reset if Frontier Queue is Empty
-    if (frontier_queue.empty())
-    {
-        reset();
     }
 }
 
@@ -563,7 +568,8 @@ int main() {
         string name;
 
         // Do Things Depending on Command
-        switch(cmd) {
+        switch(cmd)
+        {
             case '#': // Comment
                 break;
             case 'o': // Line Obstacle
@@ -671,14 +677,6 @@ int main() {
                         DEBUG_UI = false;
                     }
 
-                    // Find Path
-                    else if (event.key.code == sf::Keyboard::Space)
-                    {
-                        clock.restart();
-                        find_path_a_star();
-                        path_time = clock.getElapsedTime().asMicroseconds() / 1000.0;
-                    }
-
                     // Update Shift State Variable
                     else if (event.key.code == sf::Keyboard::LShift)
                     {
@@ -713,7 +711,7 @@ int main() {
                     }
                     break;
                 case sf::Event::MouseMoved:
-                    // Find Nearest Node to Mouse Cursor
+                    // Find the Nearest Node to Mouse Cursor
                     float min_dist = 100000; // Arbitrary Large Number
                     list<MapNode>::iterator map_iterator;
                     for (map_iterator = school_graph.begin(); map_iterator != school_graph.end(); ++map_iterator)
@@ -793,6 +791,14 @@ int main() {
             {
                 reset();
                 end_node = nearest_node;
+            }
+
+            // Find Path from Start Node to End Node
+            if (set_start || set_end)
+            {
+                clock.restart();
+                find_path_dijkstra();
+                path_time = clock.getElapsedTime().asMicroseconds() / 1000.0;
             }
         }
 

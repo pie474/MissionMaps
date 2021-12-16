@@ -28,10 +28,10 @@ struct MapNode
 {
     sf::Vector2f pos;
     list<MapNode*> neighbors;
-    double cost = 1000000, heuristic_cost = -1;
+    double cost = 1000000;
     bool visited = false;
     MapNode* previous = nullptr;
-    string name = "";
+    string name;
 };
 
 // Variables for Walls and Nodes
@@ -73,10 +73,7 @@ int orientation(sf::Vector2f p, sf::Vector2f q, sf::Vector2f r)
  */
 bool onSegment(sf::Vector2f p, sf::Vector2f q, sf::Vector2f r)
 {
-    return q.x <= max(p.x, r.x)
-        && q.x >= min(p.x, r.x)
-        && q.y <= max(p.y, r.y)
-        && q.y >= min(p.y, r.y);
+    return q.x <= max(p.x, r.x) && q.x >= min(p.x, r.x) && q.y <= max(p.y, r.y) && q.y >= min(p.y, r.y);
 }
 
 /**
@@ -170,16 +167,9 @@ MapNode* addNode(sf::Vector2f point, string name)
 
     // Link All Nodes to New Node if No Obstructions
     list<MapNode>::iterator iterator;
-    for (
-            iterator = school_graph.begin();
-            iterator != school_graph.end();
-            ++iterator
-        )
+    for (iterator = school_graph.begin(); iterator != school_graph.end(); ++iterator)
     {
-        if (
-                &*iterator != new_node_pointer &&
-                !isObstructed(point, iterator->pos)
-           )
+        if (&*iterator != new_node_pointer && !isObstructed(point, iterator->pos))
         {
             new_node_pointer->neighbors.push_back(&(*iterator));
             iterator->neighbors.push_back(new_node_pointer);
@@ -234,11 +224,7 @@ void reset()
 {
     // Reset All Nodes
     list<MapNode>::iterator map_iterator;
-    for (
-            map_iterator = school_graph.begin();
-            map_iterator != school_graph.end();
-            ++map_iterator
-        )
+    for (map_iterator = school_graph.begin(); map_iterator != school_graph.end(); ++map_iterator)
     {
         map_iterator->visited = false;
         map_iterator->cost = 1000000;
@@ -254,42 +240,28 @@ void find_path_dijkstra()
 {
     reset();
     list<MapNode>::iterator map_iterator;
-    int num_nodes = total_num_nodes;
+    int nodes_left = total_num_nodes;
 
     start_node->cost = 0;
 
     // Loop Until All Nodes are Visited
-    while (num_nodes > 0)
+    while (nodes_left > 0)
     {
         // Visit Unvisited Node with the Least Cost
         MapNode* current_node = nullptr;
-        for (
-                map_iterator = school_graph.begin();
-                map_iterator != school_graph.end();
-                ++map_iterator
-            )
+        for (map_iterator = school_graph.begin(); map_iterator != school_graph.end(); ++map_iterator)
         {
-            if (
-                    !map_iterator->visited &&
-                    (
-                        current_node == nullptr ||
-                        (map_iterator->cost < current_node->cost)
-                    )
-               )
+            if(!map_iterator->visited && (current_node == nullptr || (map_iterator->cost < current_node->cost)))
             {
                 current_node = &*map_iterator;
             }
         }
         current_node->visited = true;
-        num_nodes--;
+        nodes_left--;
 
         // Loop Through Neighboring Nodes
         list<MapNode*>::iterator neighbor_iterator;
-        for (
-                neighbor_iterator = current_node->neighbors.begin();
-                neighbor_iterator != current_node->neighbors.end();
-                ++neighbor_iterator
-            )
+        for (neighbor_iterator = current_node->neighbors.begin(); neighbor_iterator != current_node->neighbors.end(); ++neighbor_iterator)
         {
             MapNode* neighbor = *neighbor_iterator;
 
@@ -299,11 +271,9 @@ void find_path_dijkstra()
                 continue;
             }
 
-            // If the previously determined path to this neighbor is longer
-            // than going through the current node,
-            // update the path to the neighbor
-            double distance_through =
-                current_node->cost + distance(*current_node, *neighbor);
+            // If the previously determined path to this neighbor is longer than going through the current node,
+            //    update the path to the neighbor
+            double distance_through = current_node->cost + distance(*current_node, *neighbor);
 
             if (distance_through < neighbor->cost)
             {
@@ -326,13 +296,7 @@ bool DEBUG_UI = false;
  * @param thickness line thickness
  * @param color line color
  */
-void draw_line(
-    sf::RenderWindow& win,
-    sf::Vector2f pt1,
-    sf::Vector2f pt2,
-    double thickness,
-    sf::Color color
-)
+void draw_line(sf::RenderWindow& win, sf::Vector2f pt1, sf::Vector2f pt2, double thickness, sf::Color color)
 {
     sf::ConvexShape line = sf::ConvexShape();
     line.setPointCount(4);
@@ -383,11 +347,7 @@ void display_map(sf::RenderWindow& win)
     if (DEBUG_UI)
     {
         list<Wall>::iterator obstacle_iterator;
-        for (
-                obstacle_iterator = walls.begin();
-                obstacle_iterator != walls.end();
-                ++obstacle_iterator
-            )
+        for (obstacle_iterator = walls.begin(); obstacle_iterator != walls.end(); ++obstacle_iterator)
         {
             // Draw Obstacle Line
             sf::Vertex line[2];
@@ -399,11 +359,7 @@ void display_map(sf::RenderWindow& win)
 
     // Draw Intermediate Nodes if Debug Mode and Endpoint Modes
     list<MapNode>::iterator map_iterator;
-    for (
-            map_iterator = school_graph.begin();
-            map_iterator != school_graph.end();
-            ++map_iterator
-        )
+    for (map_iterator = school_graph.begin(); map_iterator != school_graph.end(); ++map_iterator)
     {
         if (map_iterator->name != " " || DEBUG_UI)
         {
@@ -424,21 +380,13 @@ void display_graph(sf::RenderWindow& win)
 {
     // Loop for Every Node
     list<MapNode>::iterator map_iterator;
-    for (
-            map_iterator = school_graph.begin();
-            map_iterator != school_graph.end();
-            ++map_iterator
-        )
+    for (map_iterator = school_graph.begin(); map_iterator != school_graph.end(); ++map_iterator)
     {
         sf::Vertex node_vertex = sf::Vertex(map_iterator->pos, sf::Color::Yellow);
 
         // Loop for Every Neighboring Node
         list<MapNode*>::iterator neighbor_iterator;
-        for (
-                neighbor_iterator = map_iterator->neighbors.begin();
-                neighbor_iterator != map_iterator->neighbors.end();
-                ++neighbor_iterator
-            )
+        for (neighbor_iterator = map_iterator->neighbors.begin(); neighbor_iterator != map_iterator->neighbors.end(); ++neighbor_iterator)
         {
             // Draw Line from Node to Neighboring Node
             sf::Vertex line[2];
@@ -481,15 +429,8 @@ int main() {
     }
 
     // Create Window
-    sf::RenderWindow window(
-        sf::VideoMode(1418, 1221),
-        "Mission Maps"
-    );
-    window.setIcon(
-        icon.getSize().x,
-        icon.getSize().y,
-        icon.getPixelsPtr()
-    );
+    sf::RenderWindow window(sf::VideoMode(1418, 1221), "Mission Maps");
+    window.setIcon(icon.getSize().x, icon.getSize().y, icon.getPixelsPtr());
     window.setActive();
     window.setFramerateLimit(30);
 
@@ -511,7 +452,7 @@ int main() {
         string name;
 
         // Do Things Depending on Command
-        switch (cmd)
+        switch(cmd)
         {
             case '#': // Comment
                 break;
@@ -657,18 +598,11 @@ int main() {
                     // Find the Nearest Node to Mouse Cursor
                     float min_dist = 100000; // Arbitrary Large Number
                     list<MapNode>::iterator map_iterator;
-                    for (
-                            map_iterator = school_graph.begin();
-                            map_iterator != school_graph.end();
-                            ++map_iterator
-                        )
+                    for (map_iterator = school_graph.begin(); map_iterator != school_graph.end(); ++map_iterator)
                     {
                         if (map_iterator->name != " ")
                         {
-                            float dist = hypot(
-                                map_iterator->pos.x - event.mouseMove.x,
-                                map_iterator->pos.y - event.mouseMove.y
-                            );
+                            float dist = hypot(map_iterator->pos.x - event.mouseMove.x, map_iterator->pos.y - event.mouseMove.y);
                             if (dist < min_dist)
                             {
                                 min_dist = dist;
@@ -694,29 +628,15 @@ int main() {
             MapNode* curr = end_node;
             while (curr != start_node)
             {
-                draw_line(
-                    window,
-                    curr->pos,
-                    curr->previous->pos,
-                    7,
-                    sf::Color(154, 154, 255)
-                );
+                draw_line(window, curr->pos, curr->previous->pos, 7, sf::Color(154, 154, 255));
                 path_length += distance(*curr, *(curr->previous));
                 curr = curr->previous;
             }
 
             // Create String Stream for Path Information
             ostringstream path_text;
-            path_text << "Path Found In: "
-                      << fixed
-                      << setprecision(3)
-                      << path_time
-                      << " ms"
-                      << endl
-                      << "Path Length: "
-                      << setprecision(1)
-                      << path_length * 0.6
-                      << " ft";
+            path_text << "Path Found In: " << fixed << setprecision(3) << path_time << " ms\n";
+            path_text << "Path Length: " << fixed << setprecision(1) << path_length * 0.6 << " ft";
 
             // Path Information Text
             sf::Text text;

@@ -3,9 +3,7 @@
 #include <iomanip>
 #include <iostream>
 #include <list>
-#include <queue>
 #include <sstream>
-#include <unordered_set>
 #include <SFML/Graphics.hpp>
 
 using namespace std;

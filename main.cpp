@@ -44,7 +44,7 @@ int total_num_nodes = 0;
 
 /**
  * Finds orientation of ordered triplet (p, q, r)
- * Helper function for doIntersect()
+ * Helper function for do_intersect()
  * Source: https://www.geeksforgeeks.org/orientation-3-ordered-points/
  * @param p
  * @param q
@@ -64,14 +64,14 @@ int orientation(sf::Vector2f p, sf::Vector2f q, sf::Vector2f r)
 
 /**
  * Checks if q lies on line segment pr
- * Helper function for doIntersect()
+ * Helper function for do_intersect()
  * Source: https://www.geeksforgeeks.org/check-if-two-given-line-segments-intersect/
  * @param p
  * @param q
  * @param r
  * @return boolean whether q lies on line segment pr
  */
-bool onSegment(sf::Vector2f p, sf::Vector2f q, sf::Vector2f r)
+bool on_segment(sf::Vector2f p, sf::Vector2f q, sf::Vector2f r)
 {
     return q.x <= max(p.x, r.x) && q.x >= min(p.x, r.x) && q.y <= max(p.y, r.y) && q.y >= min(p.y, r.y);
 }
@@ -84,7 +84,7 @@ bool onSegment(sf::Vector2f p, sf::Vector2f q, sf::Vector2f r)
  * @param r
  * @return boolean whether line segments p1q1 and p2q2 intersect
  */
-bool doIntersect(sf::Vector2f p1, sf::Vector2f q1, sf::Vector2f p2, sf::Vector2f q2)
+bool do_intersect(sf::Vector2f p1, sf::Vector2f q1, sf::Vector2f p2, sf::Vector2f q2)
 {
     // Find the four orientations needed for general and special cases
     int o1 = orientation(p1, q1, p2);
@@ -97,16 +97,16 @@ bool doIntersect(sf::Vector2f p1, sf::Vector2f q1, sf::Vector2f p2, sf::Vector2f
 
     // Special Cases
     // p1 / q1 / p2 are collinear, p2 lies on p1q1
-    if (o1 == 0 && onSegment(p1, p2, q1)) return true;
+    if (o1 == 0 && on_segment(p1, p2, q1)) return true;
 
     // p1 / q1 / q2 are collinear, q2 lies on p1q1
-    if (o2 == 0 && onSegment(p1, q2, q1)) return true;
+    if (o2 == 0 && on_segment(p1, q2, q1)) return true;
 
     // p2 / q2 / p1 are collinear, p1 lies on p2q2
-    if (o3 == 0 && onSegment(p2, p1, q2)) return true;
+    if (o3 == 0 && on_segment(p2, p1, q2)) return true;
 
     // p2 / q2 / q1 are collinear, q1 lies on p2q2
-    if (o4 == 0 && onSegment(p2, q1, q2)) return true;
+    if (o4 == 0 && on_segment(p2, q1, q2)) return true;
 
     // Doesn't fall into other cases
     return false;
@@ -114,15 +114,15 @@ bool doIntersect(sf::Vector2f p1, sf::Vector2f q1, sf::Vector2f p2, sf::Vector2f
 
 /**
  * Checks whether a wall is in between two points
- * Helper function for isObstructed() without wall parameter
+ * Helper function for is_obstructed() without wall parameter
  * @param a
  * @param b
  * @param wall
  * @return boolean whether the wall obstructs the line segment connecting the points
  */
-bool isObstructed(sf::Vector2f a, sf::Vector2f b, Wall wall)
+bool is_obstructed(sf::Vector2f a, sf::Vector2f b, Wall wall)
 {
-    return doIntersect(a, b, wall.a, wall.b);
+    return do_intersect(a, b, wall.a, wall.b);
 }
 
 /**
@@ -131,12 +131,12 @@ bool isObstructed(sf::Vector2f a, sf::Vector2f b, Wall wall)
  * @param b
  * @return boolean whether the line segment connecting the points is obstructed by any wall
  */
-bool isObstructed(sf::Vector2f a, sf::Vector2f b)
+bool is_obstructed(sf::Vector2f a, sf::Vector2f b)
 {
     list<Wall>::iterator iterator;
     for (iterator = walls.begin(); iterator != walls.end(); ++iterator)
     {
-        if (isObstructed(a, b, *iterator))
+        if (is_obstructed(a, b, *iterator))
         {
             return true;
         }
@@ -148,11 +148,11 @@ bool isObstructed(sf::Vector2f a, sf::Vector2f b)
 
 /**
  * Inputs new node with specified name into the pathable graph
- * Helper function for addNode() without name parameter
+ * Helper function for add_node() without name parameter
  * @param point the position to add to the graph
  * @return pointer to new node
  */
-MapNode* addNode(sf::Vector2f point, string name)
+MapNode* add_node(sf::Vector2f point, string name)
 {
     // Create Node
     MapNode new_node = MapNode();
@@ -169,7 +169,7 @@ MapNode* addNode(sf::Vector2f point, string name)
     list<MapNode>::iterator iterator;
     for (iterator = school_graph.begin(); iterator != school_graph.end(); ++iterator)
     {
-        if (&*iterator != new_node_pointer && !isObstructed(point, iterator->pos))
+        if (&*iterator != new_node_pointer && !is_obstructed(point, iterator->pos))
         {
             new_node_pointer->neighbors.push_back(&(*iterator));
             iterator->neighbors.push_back(new_node_pointer);
@@ -185,17 +185,17 @@ MapNode* addNode(sf::Vector2f point, string name)
  * @param point the position to add to the graph
  * @return pointer to new node
  */
-MapNode* addNode(sf::Vector2f point)
+MapNode* add_node(sf::Vector2f point)
 {
-    return addNode(point, " ");
+    return add_node(point, " ");
 }
 
 /**
- * adds a wall between two points to the map
+ * Adds a wall between two points to the map
  * @param a
  * @param b
  */
-void addWall(sf::Vector2f a, sf::Vector2f b)
+void add_wall(sf::Vector2f a, sf::Vector2f b)
 {
     Wall wall;
     wall.a = a;
@@ -458,30 +458,30 @@ int main() {
                 break;
             case 'o': // Line Obstacle
                 line_stream >> x >> y >> x2 >> y2;
-                addWall(sf::Vector2f(x, y), sf::Vector2f(x2, y2));
+                add_wall(sf::Vector2f(x, y), sf::Vector2f(x2, y2));
                 break;
             case 'b': // Box Obstacle
                 line_stream >> x >> y >> x2 >> y2;
-                addWall(sf::Vector2f(x, y), sf::Vector2f(x2, y));
-                addWall(sf::Vector2f(x2, y), sf::Vector2f(x2, y2));
-                addWall(sf::Vector2f(x, y), sf::Vector2f(x, y2));
-                addWall(sf::Vector2f(x, y2), sf::Vector2f(x2, y2));
+                add_wall(sf::Vector2f(x, y), sf::Vector2f(x2, y));
+                add_wall(sf::Vector2f(x2, y), sf::Vector2f(x2, y2));
+                add_wall(sf::Vector2f(x, y), sf::Vector2f(x, y2));
+                add_wall(sf::Vector2f(x, y2), sf::Vector2f(x2, y2));
                 break;
             case 'n': // Normal Node
                 line_stream >> x >> y;
-                addNode(sf::Vector2f(x, y));
+                add_node(sf::Vector2f(x, y));
                 break;
             case 'N': // Normal Named Node
                 line_stream >> x >> y >> name;
-                addNode(sf::Vector2f(x, y), name);
+                add_node(sf::Vector2f(x, y), name);
                 break;
             case 's': // Start Node
                 line_stream >> x >> y;
-                start_node = addNode(sf::Vector2f(x, y));
+                start_node = add_node(sf::Vector2f(x, y));
                 break;
             case 'e': // End Node
                 line_stream >> x >> y;
-                end_node = addNode(sf::Vector2f(x, y));
+                end_node = add_node(sf::Vector2f(x, y));
                 break;
             default: // Unknown Command
                 cout << "UNKNOWN CMD: " << cmd << " (" << line << ")" << endl;

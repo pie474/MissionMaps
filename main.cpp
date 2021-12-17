@@ -327,12 +327,12 @@ bool DEBUG_UI = false;
  * @param color line color
  */
 void draw_line(
-        sf::RenderWindow& win,
-        sf::Vector2f pt1,
-        sf::Vector2f pt2,
-        double thickness,
-        sf::Color color
-        )
+    sf::RenderWindow& win,
+    sf::Vector2f pt1,
+    sf::Vector2f pt2,
+    double thickness,
+    sf::Color color
+)
 {
     sf::ConvexShape line = sf::ConvexShape();
     line.setPointCount(4);
@@ -695,12 +695,12 @@ int main() {
             while (curr != start_node)
             {
                 draw_line(
-                        window,
-                        curr->pos,
-                        curr->previous->pos,
-                        7,
-                        sf::Color(154, 154, 255)
-                    );
+                    window,
+                    curr->pos,
+                    curr->previous->pos,
+                    7,
+                    sf::Color(154, 154, 255)
+                );
                 path_length += distance(*curr, *(curr->previous));
                 curr = curr->previous;
             }
@@ -708,15 +708,15 @@ int main() {
             // Create String Stream for Path Information
             ostringstream path_text;
             path_text << "Path Found In: "
-            << fixed
-            << setprecision(3)
-            << path_time
-            << " ms"
-            << endl
-            << "Path Length: "
-            << setprecision(1)
-            << path_length * 0.6
-            << " ft";
+                      << fixed
+                      << setprecision(3)
+                      << path_time
+                      << " ms"
+                      << endl
+                      << "Path Length: "
+                      << setprecision(1)
+                      << path_length * 0.6
+                      << " ft";
 
             // Path Information Text
             sf::Text text;

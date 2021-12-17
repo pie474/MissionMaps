@@ -74,9 +74,9 @@ int orientation(sf::Vector2f p, sf::Vector2f q, sf::Vector2f r)
 bool onSegment(sf::Vector2f p, sf::Vector2f q, sf::Vector2f r)
 {
     return q.x <= max(p.x, r.x)
-    && q.x >= min(p.x, r.x)
-    && q.y <= max(p.y, r.y)
-    && q.y >= min(p.y, r.y);
+        && q.x >= min(p.x, r.x)
+        && q.y <= max(p.y, r.y)
+        && q.y >= min(p.y, r.y);
 }
 
 /**
@@ -179,7 +179,7 @@ MapNode* addNode(sf::Vector2f point, string name)
         if (
                 &*iterator != new_node_pointer &&
                 !isObstructed(point, iterator->pos)
-            )
+           )
         {
             new_node_pointer->neighbors.push_back(&(*iterator));
             iterator->neighbors.push_back(new_node_pointer);
@@ -275,7 +275,7 @@ void find_path_dijkstra()
                         current_node == nullptr ||
                         (map_iterator->cost < current_node->cost)
                     )
-                )
+               )
             {
                 current_node = &*map_iterator;
             }
@@ -403,7 +403,7 @@ void display_map(sf::RenderWindow& win)
             map_iterator = school_graph.begin();
             map_iterator != school_graph.end();
             ++map_iterator
-            )
+        )
     {
         if (map_iterator->name != " " || DEBUG_UI)
         {
@@ -661,7 +661,7 @@ int main() {
                             map_iterator = school_graph.begin();
                             map_iterator != school_graph.end();
                             ++map_iterator
-                            )
+                        )
                     {
                         if (map_iterator->name != " ")
                         {
